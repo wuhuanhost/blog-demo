@@ -1,0 +1,25 @@
+extends layout
+
+block content
+  div.container
+    div.form-container
+      form(class='form-horizontal' action='/register' method='post' name='from')
+        div.form-group 
+          div.col-lg-offset-2.col-lg-10
+            h1 用户注册
+        div.form-group
+          label.col-lg-3.control-label 邮箱
+          div.col-lg-9
+            input(class='form-control' name='email' placeholder='输入邮箱')
+        div.form-group
+          label.col-lg-3.control-label 用户名
+          div.col-lg-9
+            input(class='form-control' name='username' placeholder='输入用户名')
+        div.form-group
+          label.col-lg-3.control-label 密码
+          div.col-lg-9
+            input(class='form-control' name='password' placeholder='输入密码' type='password')
+        div.form-group
+          div.col-lg-offset-3.col-lg-3
+            input(class='btn btn-primary' type='submit' value='注册')
+        
