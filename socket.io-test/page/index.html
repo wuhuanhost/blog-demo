@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <style>
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+        background: #eeeeee;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .container {
+        width: 600px;
+        height: 600px;
+        background: pink;
+        border-radius: 2px;
+        border: 1px solid #aaaaaa;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: row;
+        display: none;
+        top: 100px;
+        position: relative;
+    }
+    
+    .person-list {
+        width: 200px;
+        height: 100%;
+        background: #cccccc;
+    }
+    
+    .person-list p {
+        padding: 0 10px;
+    }
+    
+    .message-content {
+        flex: 1;
+        height: 100%;
+        background: #ffffff;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .message-list {
+        height: 460px;
+        width: 100%;
+        overflow-y: auto;
+        padding: 10px 0 20px 0;
+    }
+    
+    .post-message {
+        flex: 1;
+        width: 100%;
+        border-top: 1px solid #cccccc;
+    }
+    
+    .post-message textarea {
+        width: 400px;
+        height: 120px;
+        border: 0;
+        resize: none;
+        outline: none;
+        font-size: 16px;
+        font-family: "微软雅黑"
+    }
+    
+    .post-message p {
+        text-align: right;
+        margin: 0;
+        padding: 10px;
+    }
+    
+    .mask {
+        width: 100%;
+        height: 100%;
+        background: #eeeeee;
+        position: fixed;
+    }
+    
+    .userinfo {
+        width: 600px;
+        height: 400px;
+        /*background: red;*/
+        margin: 0 auto;
+        position: relative;
+        top: 20%;
+        color: #cccccc;
+        text-align: center;
+    }
+    
+    #nickname {
+        width: 100%;
+        height: 40px;
+        border: 0;
+        outline: none;
+        background: #eeeeee;
+        border-bottom: 1px solid #cccccc;
+        font-size: 22px;
+        text-align: center;
+        margin-top: 20%;
+        color: #333333;
+    }
+    
+    #register-btn {
+        cursor: pointer;
+    }
+    
+    .tip1 {
+        text-align: center;
+        font-size: 12px;
+    }
+    
+    .tip2 {
+        margin: 0;
+        padding: 0 10px;
+        text-align: left;
+        font-size: 14px;
+        display: inline-block;
+        height: 20px;
+        line-height: 20px;
+        /*border: 1px solid #333333;*/
+        border-radius: 10px;
+        margin-left: 10px;
+        max-width: 240px;
+        background: #eeeeee;
+    }
+    
+    .tip3 {
+        margin: 0;
+        padding: 0 10px;
+        text-align: left;
+        font-size: 12px;
+        color: green;
+        margin-top: 10px;
+    }
+    
+    .tip-style-1 {
+        color: blue;
+    }
+    
+    .tip-style-2 {
+        color: red;
+    }
+    </style>
+</head>
+
+<body>
+    <div class="mask">
+        <div class="userinfo">
+            <h1>socket.io聊天室</h1>
+            <input type="text" id="nickname" placeholder="输入你的聊天昵称">
+            <p style="text-align:center;">
+                <input type="button" id="register-btn" value="进入聊天室">
+            </p>
+        </div>
+    </div>
+    <div class="container">
+        <div class="person-list">
+        </div>
+        <div class="message-content">
+            <div class="message-list"></div>
+            <div class="post-message">
+                <textarea name="" id="message"></textarea>
+                <p>
+                    <button id="post-message">发送</button>
+                </p>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+    <script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script>
+    var socket = null;
+    var nickname = "";
+    var fromId = "";
+    var toId = "";
+    var toNickname = "";
+    $(document).ready(function() {
+        $("#register-btn").click(function() {
+            nickname = $("#nickname").val();
+            $("title").html(nickname);
+            if (nickname !== undefined && nickname !== "") {
+                goRoom();
+            } else {
+                alert("输入昵称之后才能进入聊天室");
+            }
+        });
+
+        $("#post-message").click(function() {
+            var msg = $("#message").val();
+            // alert(msg)
+            if (msg !== "") {
+                if (toId === ""||toId===undefined) {
+                    socket.emit('msg', {
+                        nickname: nickname,
+                        msg: msg
+                    });
+                } else { //私聊
+                    socket.emit('private-msg', {
+                        fromId: fromId,
+                        toId: toId,
+                        msg: msg,
+                        nickname: nickname,
+                        toNickname: toNickname
+                    })
+                }
+                $(".message-list").append("<p class='tip3'>" + nickname + "说：</p><p class='tip2'>" + msg + " </p>");
+                $("#message").val("");
+                scrollBottom();
+            } else {
+                alert("消息不能为空！")
+            }
+        });
+    });
+
+
+    /**
+     * 进入聊天室
+     * @return {[type]} [description]
+     */
+    function goRoom() {
+        $(".mask").hide();
+        $(".container").css("display", "flex");
+        socket = io.connect('http://localhost:3000');
+        socket.emit('join_room', {
+            name: nickname
+        });
+
+        socket.on('exit_room_tip', function(data) {
+            console.log(data);
+            $(".message-list").append("<p class='tip1'><span class='tip-style-1'> " + data.msg + " </span>退出聊天室</p>");
+            scrollBottom();
+        });
+
+
+        socket.on('join_room_tip', function(data) {
+            if (data.msg === nickname) {
+                fromId = data.id;
+            }
+            $(".message-list").append("<p class='tip1'>欢迎<span class='tip-style-1'> " + data.msg + " </span>进入聊天室</p>");
+            scrollBottom();
+        });
+
+        socket.on('person-list', function(data) {
+            console.log(data);
+            var html = "";
+            for (var i = 0; i < data.length; i++) {
+                html += "<p id='" + data[i].id + "' onclick='sendMsg(\"" + data[i].id + "\",\"" + data[i].nickname + "\")'>" + data[i].nickname + "</p>";
+            }
+            $(".person-list").html(html);
+        })
+
+        socket.on('msg', function(data) {
+            $(".message-list").append("<p class='tip3'>" + data.nickname + "说：</p><p class='tip2'>" + data.msg + " </p>");
+            scrollBottom();
+        })
+        var flag = false;
+        socket.on('private-msg', function(data) {
+            if (!flag) {
+                $(".message-list").append("<p class='tip1'>------与<span class='tip-style-1'> " + data.nickname + " </span>私聊中......------</p>");
+                flag = true;
+            }
+            toId = data.fromId;
+            $(".message-list").append("<p class='tip3'>" + data.nickname + "说：</p><p class='tip2'>" + data.msg + " </p>");
+            scrollBottom();
+        })
+    }
+
+
+    //滚动条滚动到底部
+    function scrollBottom() {
+        var div = $('.message-list')[0];
+        div.scrollTop = div.scrollHeight;
+    }
+
+    /**
+     * [sendMsg description]
+     * @param  {[type]} id [description]
+     * @return {[type]}    [description]
+     */
+    function sendMsg(id, nickname) {
+        toId = id;
+        toNickname = nickname;
+        if (fromId !== toId) {
+            $(".message-list").append("<p class='tip1'>------与<span class='tip-style-1'> " + nickname + " </span>私聊中......------</p>");
+        }
+    }
+    </script>
+</body>
+
+</html>
