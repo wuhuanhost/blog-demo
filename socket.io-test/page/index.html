@@ -195,7 +195,7 @@
             var msg = $("#message").val();
             // alert(msg)
             if (msg !== "") {
-                if (toId === ""||toId===undefined) {
+                if (toId === "" || toId === undefined) {
                     socket.emit('msg', {
                         nickname: nickname,
                         msg: msg
@@ -226,9 +226,12 @@
     function goRoom() {
         $(".mask").hide();
         $(".container").css("display", "flex");
-        socket = io.connect('http://localhost:3000');
-        socket.emit('join_room', {
-            name: nickname
+        socket = io.connect('http://192.168.1.101:3000');
+
+        socket.on('connect', function() {
+            socket.emit('join_room', {
+                name: nickname
+            });
         });
 
         socket.on('exit_room_tip', function(data) {
@@ -270,6 +273,10 @@
             scrollBottom();
         })
     }
+
+
+
+
 
 
     //滚动条滚动到底部
